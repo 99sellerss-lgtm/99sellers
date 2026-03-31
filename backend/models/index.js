@@ -12,17 +12,20 @@ const dbConfig = config[env];
 let sequelize;
 
 // Detect Railway variables
-const rHost = process.env.MYSQLHOST;
-const rPort = process.env.MYSQLPORT;
-const rUser = process.env.MYSQLUSER;
-const rPass = process.env.MYSQLPASSWORD;
-const rDb = process.env.MYSQLDATABASE;
+const rHost = process.env.MYSQLHOST || process.env.DB_HOST;
+const rPort = process.env.MYSQLPORT || process.env.DB_PORT;
+const rUser = process.env.MYSQLUSER || process.env.DB_USER;
+const rPass = process.env.MYSQLPASSWORD || process.env.DB_PASSWORD;
+const rDb = process.env.MYSQLDATABASE || process.env.DB_NAME;
 const mysqlUrl = process.env.MYSQL_URL || process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
 
-console.log('[DB_DEBUG] Railway/Env Detection:');
-console.log('[DB_DEBUG] MYSQLHOST:', rHost ? 'PRESENT' : 'MISSING');
-console.log('[DB_DEBUG] MYSQL_URL:', mysqlUrl ? 'PRESENT' : 'MISSING');
-console.log('[DB_DEBUG] NODE_ENV:', process.env.NODE_ENV);
+console.log('--- [DB SERVICE DISCOVERY] ---');
+console.log('MYSQLHOST/DB_HOST:', rHost ? 'PRESENT' : 'MISSING');
+console.log('MYSQLUSER/DB_USER:', rUser ? 'PRESENT' : 'MISSING');
+console.log('MYSQLDATABASE/DB_NAME:', rDb ? 'PRESENT' : 'MISSING');
+console.log('MYSQL_URL/DATABASE_URL:', mysqlUrl ? 'PRESENT' : 'MISSING');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('------------------------------');
 
 // Logic: Prefer individual variables on Railway for more stability, fallback to URL
 if (rHost && rUser && rDb) {
