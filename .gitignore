@@ -1,0 +1,14 @@
+node_modules/
+**/node_modules/
+.env*
+**/.env*
+.next/
+frontend/.next/
+frontend/out/
+backend/dist/
+dist/
+build/
+*.log
+.DS_Store
+.vercel
+.cache
