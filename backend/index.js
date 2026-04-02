@@ -28,9 +28,10 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   // 3. BACKGROUND HEAVY LOADING
   // ==========================================
   try {
-    console.log('[INIT] Loading models and routes in background...');
+    console.log('[DEBUG_LOG] --- 🟢 STARTING BACKGROUND INIT ---');
 
     // Basic Middleware
+    console.log('[DEBUG_LOG] Step 1: Setting up middleware...');
     app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
     app.use(cors({ origin: true, credentials: true }));
     app.use(express.json({ limit: '10mb' }));
@@ -41,44 +42,48 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
     // Load Database & Models
+    console.log('[DEBUG_LOG] Step 2: Loading Sequelize Models...');
     const db = require('./models');
     const { sequelize } = db;
 
-    console.log('[DB] Connecting...');
-    await sequelize.authenticate();
-    console.log('[DB] Connected.');
+    console.log('[DEBUG_LOG] Step 3: Authenticating with DB...');
+    console.log(`[DB_INFO] Host: ${process.env.MYSQLHOST || 'NOT_SET'}`);
+    console.log(`[DB_INFO] User: ${process.env.MYSQLUSER || 'NOT_SET'}`);
+    console.log(`[DB_INFO] Database: ${process.env.MYSQLDATABASE || 'NOT_SET'}`);
 
-    // Debug endpoint - raw SQL counts (place BEFORE routes to avoid auth)
+    await sequelize.authenticate();
+    console.log('[DEBUG_LOG] Step 4: DB Connection SUCCESS.');
+
+    // Debug endpoint - raw SQL counts
     app.get('/api/debug-counts', async (req, res) => {
       try {
         const [props] = await sequelize.query('SELECT COUNT(*) as c FROM property');
-        const [proaddr] = await sequelize.query('SELECT COUNT(*) as c FROM proaddress');
         const [users] = await sequelize.query('SELECT COUNT(*) as c FROM user_login');
-        const [motives] = await sequelize.query('SELECT COUNT(*) as c FROM motive_types');
-        const [loans] = await sequelize.query('SELECT COUNT(*) as c FROM loan');
-        const [owners] = await sequelize.query('SELECT COUNT(*) as c FROM owner');
-        res.json({
-          property: props[0].c, proaddress: proaddr[0].c, user_login: users[0].c,
-          motive_types: motives[0].c, loan: loans[0].c, owner: owners[0].c
-        });
+        res.json({ success: true, property: props[0].c, user_login: users[0].c });
       } catch (e) { res.json({ error: e.message }); }
     });
 
     // Load Consolidated Routes
+    console.log('[DEBUG_LOG] Step 5: Mounting API routes...');
     app.use('/api/admin', require('./routes/AdminCore_Routes'));
     app.use('/api', require('./routes/UserCore_Routes'));
 
-    app.get('/api/test', (req, res) => res.json({ success: true, status: 'READY' }));
+    app.get('/api/test', (req, res) => res.json({ success: true, status: 'READY', time: new Date() }));
 
     // Sync & Seed in background
+    console.log('[DEBUG_LOG] Step 6: Syncing models (background)...');
     await sequelize.sync();
-    console.log('[DB] Models Synced.');
+    
     const { seedData } = require('./services/AppServices_Module');
+    console.log('[DEBUG_LOG] Step 7: Starting seeding (background)...');
     await seedData();
-    console.log('[DB] Seeding Finished. SYSTEM READY.');
+    console.log('[DEBUG_LOG] --- ✅ BACKGROUND INIT COMPLETE. SYSTEM READY ---');
 
   } catch (err) {
-    console.error('[CRITICAL_INIT_ERROR]', err.message);
+    console.error('\n❌ [CRITICAL_INIT_ERROR] ❌');
+    console.error('Message:', err.message);
+    if (err.parent) console.error('Parent Cause:', err.parent.message);
+    console.error('Check your Railway Environment Variables for matching names!');
   }
 });
 
